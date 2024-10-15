@@ -30,7 +30,6 @@ sudo make install
 
 ## 3. cuda安装
 略
-
 ## 参考项目
 - https://github.com/zjhellofss/KuiperLLama
 - https://github.com/zjhellofss/KuiperInfer
