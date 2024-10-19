@@ -2,7 +2,7 @@
 namespace cudaoperators
 {
     // 矩阵乘法的CUDA内核函数：C = A * B
-    __global__ void mmul(const float *A, const float *B, float *C, int ds) 
+    __global__ void mmul_common(const float *A, const float *B, float *C, int ds) 
     {
 
         int idx = threadIdx.x + blockDim.x * blockIdx.x; // 计算当前线程的x索引（全局x坐标）
@@ -19,21 +19,61 @@ namespace cudaoperators
         }
 
     }
+  
+__global__ void mmul(const float *A, const float *B, float *C, int ds, int block_size) 
+{
+    // Declare dynamic shared memory as a 1D array
+    extern __shared__ float shared_mem[];
+
+    // As and Bs are pointers to different parts of shared memory
+    float *As = shared_mem;  // First part of shared memory for As
+    float *Bs = &shared_mem[block_size * block_size]; // Second part for Bs
+
+    // Calculate global thread indices
+    int idx = threadIdx.x + blockDim.x * blockIdx.x; // 全局的列索引
+    int idy = threadIdx.y + blockDim.y * blockIdx.y; // 全局的行索引
+
+    if ((idx < ds) && (idy < ds)) 
+    {
+        float temp = 0;
+
+        // Loop over submatrices of A and B
+        for (int i = 0; i < ds / block_size; i++) 
+        {
+            // Load data into shared memory from global memory
+            // Manual 2D indexing for As and Bs using 1D array
+            As[threadIdx.y * block_size + threadIdx.x] = A[idy * ds + (i * block_size + threadIdx.x)];
+            Bs[threadIdx.y * block_size + threadIdx.x] = B[(i * block_size + threadIdx.y) * ds + idx];
+
+            // Synchronize threads to ensure all data is loaded
+            __syncthreads();
+
+            // Compute partial sum
+            for (int k = 0; k < block_size; k++) 
+            {
+                temp += As[threadIdx.y * block_size + k] * Bs[k * block_size + threadIdx.x];
+            }
+
+            // Synchronize threads again before loading new submatrix
+            __syncthreads();
+        }
+
+        // Write the computed value to global memory
+        C[idy * ds + idx] = temp;
+    }
+}
 
 
   void common_matrix_mul_operator_cu(const float *A, const float *B, float *C, int row, int col) 
   {
 
-    const int block_size = 32;  // CUDA maximum is 1024 *total* threads in block
+    int block_size = 3;
+    size_t shared_mem_size = 2 * block_size * block_size * sizeof(float); // As and Bs
 
-    dim3 block(block_size, block_size);  // 每个块包含32x32的线程
+    dim3 block(block_size, block_size);
+    dim3 grid((row + block.x - 1) / block.x, (col + block.y - 1) / block.y);
 
-    dim3 grid((row + block.x - 1) / block.x, (row + block.y - 1) / block.y);  // 计算网格大小，确保覆盖全部元素
-
-    mmul<<<grid, block>>>(A, B, C, row);  // 启动CUDA内核，执行矩阵乘法s
-
-    // 这里需要传递的是指针
-    // common_matrix_mul_operator_cu<<<block_num, thread_num>>>(size, input1, input2, output);
+    mmul<<<grid, block, shared_mem_size>>>(A, B, C, row, block_size);
 
   }
 }

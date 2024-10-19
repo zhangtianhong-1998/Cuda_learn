@@ -2,7 +2,7 @@
 
 namespace cudaoperators
 {
-  __global__ void add_operator_cu_fp32(int32_t size, const int* in1, const int* in2, int* out) 
+  __global__ void add_operator(int32_t size, const int* in1, const int* in2, int* out) 
   {
     int32_t global_index = threadIdx.x + blockDim.x * blockIdx.x;
     
@@ -24,7 +24,7 @@ namespace cudaoperators
     int32_t block_num = (size + thread_num - 1) / thread_num;
 
     // 这里需要传递的是指针
-    add_operator_cu_fp32<<<block_num, thread_num>>>(size, input1, input2, output);
+    add_operator<<<block_num, thread_num>>>(size, input1, input2, output);
 
   }
 } 

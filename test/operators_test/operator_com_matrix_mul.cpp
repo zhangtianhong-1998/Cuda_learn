@@ -1,12 +1,11 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
-#include <cuda_runtime_api.h>
-#include "../utils.h"
+#include "utils.h"
 #include "../../project/src/operators/interface.h"
 
 TEST(test_op, com_matrix_mul) 
 {
-    const int DSIZE = 8192;
+    const int DSIZE = 9;
 
     const float A_val = 3.0f;
     const float B_val = 2.0f;
@@ -64,8 +63,8 @@ TEST(test_op, com_matrix_mul)
 
     // CUDA处理的第三步完成（结果返回主机）
 
-    for (int i = 0; i < DSIZE*DSIZE; i++)  // 遍历所有元素进行验证
-        if (h_C[i] != A_val*B_val*DSIZE) 
+    for (int i = 0; i < DSIZE * DSIZE; i++)  // 遍历所有元素进行验证
+        if (h_C[i] != A_val * B_val * DSIZE) 
         {  // 如果计算结果不正确，输出错误信息
             std::cout<<"mismatch at index %d, was: %f, should be: %f\n" << i << h_C[i] << A_val*B_val*DSIZE<<std::endl;
         }

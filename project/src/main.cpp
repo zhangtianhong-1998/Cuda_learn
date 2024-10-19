@@ -1,17 +1,33 @@
-#include <glog/logging.h>
-#include <gtest/gtest.h>
-#include <ctime>
-#include "utils.h"
-#include "../../project/src/operators/interface.h"
 #define N (20480 * 20480)  // 设置较大的 N
+#define THREADS_PER_BLOCK 512
 
+#include <cuda_runtime_api.h>
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include "operators/interface.h"
 
-TEST(test_op, log_test) 
+void generateRandomArray(int*& a, int n) 
 {
-    std::cout<<"123456"<<std::endl;
+    a = new int[n];
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+
+    for (int i = 0; i < n; ++i) 
+    {
+        a[i] = rand() % 100;
+    }
 }
 
-TEST(test_op, add) 
+void checkCudaError(cudaError_t err, const char* action) 
+{
+    if (err != cudaSuccess) 
+    {
+        std::cerr << "CUDA Error during: " << action << " - " << cudaGetErrorString(err) << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+int main(void)
 {
     int *a, *b, *c;
     int *d_a, *d_b, *d_c; // CUDA 指针
@@ -57,4 +73,6 @@ TEST(test_op, add)
     cudaFree(d_a);
     cudaFree(d_b);
     cudaFree(d_c);
+
+    return 0;
 }
