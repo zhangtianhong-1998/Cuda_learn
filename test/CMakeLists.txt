@@ -11,7 +11,7 @@ set(DIR_TEST
 )
 
 set(DIR_TEST_OP
-    ${CMAKE_SOURCE_DIR}/test/operators_test/operator_com_matrix_mul.cpp
+    ${CMAKE_SOURCE_DIR}/test/operators_test/operator_matrix.cpp
     ${CMAKE_SOURCE_DIR}/test/operators_test/operators_test.cpp
     ${CMAKE_SOURCE_DIR}/test/operators_test/operator_stencil_1d.cpp
 )

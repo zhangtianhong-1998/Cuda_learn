@@ -41,19 +41,19 @@ set_target_properties(cudalearn PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 add_subdirectory(test)
 
 # -----------------------以下是编译主程序--------------------------
-# set(link_ext_lib glog::glog GTest::gtest)
+set(link_ext_lib glog::glog GTest::gtest)
 
-# add_executable(demo project/src/main.cpp)
+add_executable(demo project/src/main.cpp)
 
-# target_include_directories(demo PUBLIC ${glog_INCLUDE_DIR})
-# target_include_directories(demo PUBLIC ${GTest_INCLUDE_DIR})
-# # 这一行可能有点重复引用
-# target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/project/include)
+target_include_directories(demo PUBLIC ${glog_INCLUDE_DIR})
+target_include_directories(demo PUBLIC ${GTest_INCLUDE_DIR})
+# 这一行可能有点重复引用
+target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/project/include)
 
-# target_link_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/lib)
+target_link_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/lib)
 
-# target_link_libraries(demo ${link_ext_lib})
-# target_link_libraries(demo cudalearn)
+target_link_libraries(demo ${link_ext_lib})
+target_link_libraries(demo cudalearn)
 
-# set_target_properties(demo PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-# set_target_properties(demo PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(demo PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_target_properties(demo PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
