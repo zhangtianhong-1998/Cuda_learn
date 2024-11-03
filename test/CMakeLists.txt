@@ -14,6 +14,7 @@ set(DIR_TEST_OP
     ${CMAKE_SOURCE_DIR}/test/operators_test/operator_matrix.cpp
     ${CMAKE_SOURCE_DIR}/test/operators_test/operators_test.cpp
     ${CMAKE_SOURCE_DIR}/test/operators_test/operator_stencil_1d.cpp
+    ${CMAKE_SOURCE_DIR}/test/cuda_api_test/cuda_api_test.cpp
 )
 
 # 添加可执行文件

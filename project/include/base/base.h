@@ -15,6 +15,13 @@ namespace mbase
         Device = 2,
     };
 
+    enum class DataType : uint8_t {
+        Unknown = 0,
+        Float32 = 1,
+        Int8 = 2,
+        Int32 = 3,
+        Float64 = 4,
+    };
 }
 
 #endif  // BASE_H_

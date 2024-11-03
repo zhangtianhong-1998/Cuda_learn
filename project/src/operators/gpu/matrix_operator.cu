@@ -86,17 +86,51 @@ namespace cudaoperators
 
 // -----------------------------------矩阵行和-----------------------------------
 
-    // 矩阵行和
+    // // 矩阵行和 优化前
+    // template <typename T>
+    // __global__ void row_sums(const T* A, T* sums, size_t ds)
+    // {
+    //     int idx = threadIdx.x + blockDim.x * blockIdx.x; // create typical 1D thread index from built-in variables
+    //     if (idx < ds)
+    //     {
+    //         T sum = 0;
+    //         for (size_t i = 0; i < ds; i++)
+    //         sum += A[idx*ds+i];      
+    //         sums[idx] = sum;
+    //     }
+    // }
+    // 优化后
     template <typename T>
-    __global__ void row_sums(const T* A, T * sums, size_t ds)
+    __global__ void row_sums(const T* A, T* sums, size_t ds)
     {
-        int idx = threadIdx.x + blockDim.x * blockIdx.x; // create typical 1D thread index from built-in variables
+        int idx = blockIdx.x; // 实际是矩阵的列号
+
         if (idx < ds)
         {
-            T sum = 0;
-            for (size_t i = 0; i < ds; i++)
-            sum += A[idx*ds+i];         // write a for loop that will cause the thread to iterate across a row, keeeping a running sum, and write the result to sums
-            sums[idx] = sum;
+            extern __shared__ char share_mem[];
+
+            T *sdata = (T*)share_mem; 
+
+            int tid = threadIdx.x;
+            
+            sdata[tid] = 0.0f;
+
+            size_t tidx = tid;
+
+            while (tidx < ds) 
+            {  // block stride loop to load data
+                sdata[tid] += A[idx * ds + tidx];
+                tidx += blockDim.x;  
+            }
+
+            for (unsigned int s=blockDim.x/2; s>0; s>>=1) 
+            {
+                __syncthreads();
+                if (tid < s)  // parallel sweep reduction
+                    sdata[tid] += sdata[tid + s];
+            }
+
+            if (tid == 0) atomicAdd(&sums[idx], sdata[0]);
         }
     }
 
@@ -108,26 +142,61 @@ namespace cudaoperators
     void matrix_row_sum_operator_cu(const T* A, T* sum, const int row) 
     {
         int block_size = 256;
-
-        int grid = (row + block_size - 1) / block_size;
-
-        row_sums<T><<<grid, block_size>>>(A, sum, row);
+        // int grid = (row + block_size - 1) / block_size;
+        int grid = row;
+        
+        row_sums<T><<<grid, block_size, block_size * sizeof(T)>>>(A, sum, row);
 
     }
 
 // -----------------------------------矩阵列和-----------------------------------
+    // template <typename T>
+    // __global__ void column_sums(const T *A, T *sums, size_t ds)
+    // {
+    //     int idx = threadIdx.x+blockDim.x*blockIdx.x;
+    //     if (idx < ds)
+    //     {
+    //         T sum = 0.0f;
+    //         for (size_t i = 0; i < ds; i++)
+    //             sum += A[idx + ds * i];      
+    //         sums[idx] = sum;
+    //     }
+    // }
     template <typename T>
-    __global__ void column_sums(const T *A, T *sums, size_t ds)
+    __global__ void column_sums(const T* A, T* sums, size_t ds)
     {
-        int idx = threadIdx.x+blockDim.x*blockIdx.x;
+        int idx = blockIdx.x; // 实际是矩阵的行号
         if (idx < ds)
         {
-            T sum = 0.0f;
-            for (size_t i = 0; i < ds; i++)
-            sum += A[idx+ds*i];      
-            sums[idx] = sum;
+            extern __shared__ char share_mem[];
+
+            T *sdata = (T*)share_mem; 
+
+            int tid = threadIdx.x;
+            
+            sdata[tid] = 0.0f;
+
+            size_t tidx = tid;
+            // block stride loop to load data
+            while (tidx < ds)  
+            {  
+                sdata[tid] += A[idx  + tidx * ds];
+
+                tidx += blockDim.x;  
+            }
+
+            for (unsigned int s=blockDim.x/2; s>0; s>>=1) 
+            {
+                __syncthreads();
+                // parallel sweep reduction
+                if (tid < s)  
+                    sdata[tid] += sdata[tid + s];
+            }
+
+            if (tid == 0) atomicAdd(&sums[idx], sdata[0]);
         }
     }
+
     template void cudaoperators::matrix_col_sum_operator_cu<float>(const float* A, float* sum, const int col);
     template void cudaoperators::matrix_col_sum_operator_cu<double>(const double* A, double* sum, const int col);
     template void cudaoperators::matrix_col_sum_operator_cu<int>(const int* A, int* sum,  const int col);
@@ -136,9 +205,10 @@ namespace cudaoperators
     void matrix_col_sum_operator_cu(const T* A, T* sum, const int col) 
     {
         int block_size = 256;
-        int grid = (col + block_size - 1) / block_size;
-        column_sums<T><<<grid, block_size>>>(A, sum, col);
-
+        // int grid = (col + block_size - 1) / block_size;
+        // column_sums<T><<<grid, block_size>>>(A, sum, col);
+        int grid = col;
+        column_sums<T><<<grid, block_size, block_size * sizeof(T)>>>(A, sum, col);
     }
 
 }

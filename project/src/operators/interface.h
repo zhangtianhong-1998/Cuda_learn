@@ -39,6 +39,68 @@ namespace moperators
         return nullptr;
         }
     }
+//*----------------------向量归约和-----------------
+    template <typename T>
+    using vec_sum_operator = std::function<void(T* input, T* output, const int size)>;
+
+    // 根据设备类型返回不同的加法内核函数指针，支持泛型
+    template <typename T>
+    vec_sum_operator<T> get_vec_sum_operator(mbase::DeviceType device_type);
+
+    template <typename T>
+    vec_sum_operator<T> get_vec_sum_operator(mbase::DeviceType device_type) 
+    {
+        if (device_type == mbase::DeviceType::HOST) 
+        {
+        // 如果是 HOST，返回 nullptr，意味着没有使用 GPU
+        return nullptr;
+        } 
+        else if (device_type == mbase::DeviceType::Device) 
+        {
+            return [](T* input, T* output, int size) {
+
+                // 调用模板实例化的内核函数
+                cudaoperators::vec_sum_operator_cu(input, output, size);
+            };
+        }
+        else 
+        {
+        // 如果传入的设备类型未知，记录错误并返回 nullptr
+        LOG(FATAL) << "Unknown device type for get a add operator.";
+        return nullptr;
+        }
+    }
+//*----------------------向量维度最大化-----------------
+    template <typename T>
+    using vec_max_operator = std::function<void(T* input, T* output, const int size)>;
+
+    // 根据设备类型返回不同的加法内核函数指针，支持泛型
+    template <typename T>
+    vec_max_operator<T> get_vec_max_operator(mbase::DeviceType device_type);
+
+    template <typename T>
+    vec_max_operator<T> get_vec_max_operator(mbase::DeviceType device_type) 
+    {
+        if (device_type == mbase::DeviceType::HOST) 
+        {
+        // 如果是 HOST，返回 nullptr，意味着没有使用 GPU
+        return nullptr;
+        } 
+        else if (device_type == mbase::DeviceType::Device) 
+        {
+            return [](T* input, T* output, int size) {
+
+                // 调用模板实例化的内核函数
+                cudaoperators::vec_max_operator_cu(input, output, size);
+            };
+        }
+        else 
+        {
+        // 如果传入的设备类型未知，记录错误并返回 nullptr
+        LOG(FATAL) << "Unknown device type for get a add operator.";
+        return nullptr;
+        }
+    }
     //---------------END ---------------------------------------------
     //---------------矩阵乘法算子泛型---------------------------------------------
     template <typename T>
